@@ -1,11 +1,11 @@
-import numpy
-import functools
+import numpy, functools
 
 class Neuron:
-    def __init__(self, synapses, learning_rate, active_func):
+    def __init__(self, synapses, learning_rate, active, derivative):
         self.learning_rate = learning_rate
         self.synapses = synapses
-        self.active_func = active_func
+        self.active = active
+        self.derivative = derivative
 
         self.weights = numpy.random.random(synapses)
         self.bias = numpy.random.random()
@@ -13,12 +13,17 @@ class Neuron:
     def __active(self, inputs):
         sum = functools.reduce(lambda s, el: s + el[0] * el[1], zip(self.weights, inputs),  0) + self.bias
 
-        return self.active_func(sum)
+        return self.active(sum)
 
-    def __derivative(self, inputs, output_expected, relativ_derivative):
+    def __derivative(self, inputs, relative_input):
+        sum = functools.reduce(lambda s, el: s + el[0] * el[1], zip(self.weights, inputs),  0) + self.bias
+
+        return self.derivative(sum) * relative_input
+
+    def __change_weight(self, inputs, output_expected, relative_input):
         func = self.__active(inputs)
 
-        return 2 * (func - output_expected) * (func * (1 - func)) * relativ_derivative
+        return 2 * (func - output_expected) * self.__derivative(inputs, relative_input)
 
     def score(self, inputs, expected_outputs):
         outputs = self.predict(inputs)
@@ -38,8 +43,8 @@ class Neuron:
 
     def fit(self, inputs, output_expected, training_frequency):
         for _ in range(training_frequency):
-            ti = numpy.random.randint(0, len(inputs))
+            ti = numpy.random.randint(0, len(inputs) - 1)
 
             for i in range(self.synapses):
-                self.weights[i] = self.weights[i] - self.learning_rate * self.__derivative(inputs[ti], output_expected[ti], inputs[ti][i])
-            self.bias = self.bias - self.learning_rate * self.__derivative(inputs[ti], output_expected[ti], 1)
+                self.weights[i] = self.weights[i] - self.learning_rate * self.__change_weight(inputs[ti], output_expected[ti], inputs[ti][i])
+            self.bias = self.bias - self.learning_rate * self.__change_weight(inputs[ti], output_expected[ti], 1)
