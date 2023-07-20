@@ -1,2 +1,2 @@
-# A.I.
+# ai
 Repository for artificial intelligence algorithms
